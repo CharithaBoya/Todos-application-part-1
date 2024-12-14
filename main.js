@@ -2,23 +2,33 @@ document.addEventListener("DOMContentLoaded", function () {
     let todoItemsContainer = document.getElementById("todoItemsContainer");
     let addTodoButton = document.getElementById("addTodoButton");
     let saveTodoButton = document.getElementById("saveTodoButton");
+    let completedTasksElement = document.getElementById("completedTasks");
+    let totalTasksElement = document.getElementById("totalTasks");
 
     function getTodoListFromLocalStorage() {
         let stringifiedTodoList = localStorage.getItem("todoList");
         let parsedTodoList = JSON.parse(stringifiedTodoList);
-        if (parsedTodoList === null) {
-            return [];
-        } else {
-            return parsedTodoList;
-        }
+        return parsedTodoList === null ? [] : parsedTodoList;
     }
 
     let todoList = getTodoListFromLocalStorage();
-    let todosCount = todoList.length;
+
+   
+    let todosCount = todoList.length > 0
+        ? Math.max(...todoList.map(todo => todo.uniqueNo))
+        : 0;
 
     saveTodoButton.onclick = function () {
         localStorage.setItem("todoList", JSON.stringify(todoList));
     };
+
+    function updateTaskCounts() {
+        let completedCount = todoList.filter(todo => todo.isChecked).length;
+        let totalCount = todoList.length;
+
+        completedTasksElement.textContent = `Completed: ${completedCount}`;
+        totalTasksElement.textContent = `Total Tasks: ${totalCount}`;
+    }
 
     function onAddTodo() {
         let userInputElement = document.getElementById("todoUserInput");
@@ -29,16 +39,17 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        todosCount = todosCount + 1;
+        todosCount += 1;
 
         let newTodo = {
             text: userInputValue,
             uniqueNo: todosCount,
-            isChecked: false
+            isChecked: false,
         };
         todoList.push(newTodo);
         createAndAppendTodo(newTodo);
         userInputElement.value = "";
+        updateTaskCounts();
     }
 
     addTodoButton.onclick = function () {
@@ -51,22 +62,14 @@ document.addEventListener("DOMContentLoaded", function () {
         labelElement.classList.toggle("checked");
 
         let todoObjectIndex = todoList.findIndex(function (eachTodo) {
-            let eachTodoId = "todo" + eachTodo.uniqueNo;
-
-            if (eachTodoId === todoId) {
-                return true;
-            } else {
-                return false;
-            }
+            return "todo" + eachTodo.uniqueNo === todoId;
         });
 
         let todoObject = todoList[todoObjectIndex];
 
-        if (todoObject.isChecked === true) {
-            todoObject.isChecked = false;
-        } else {
-            todoObject.isChecked = true;
-        }
+        todoObject.isChecked = checkboxElement.checked;
+
+        updateTaskCounts();
     }
 
     function onDeleteTodo(todoId) {
@@ -74,15 +77,12 @@ document.addEventListener("DOMContentLoaded", function () {
         todoItemsContainer.removeChild(todoElement);
 
         let deleteElementIndex = todoList.findIndex(function (eachTodo) {
-            let eachTodoId = "todo" + eachTodo.uniqueNo;
-            if (eachTodoId === todoId) {
-                return true;
-            } else {
-                return false;
-            }
+            return "todo" + eachTodo.uniqueNo === todoId;
         });
 
         todoList.splice(deleteElementIndex, 1);
+
+        updateTaskCounts();
     }
 
     function createAndAppendTodo(todo) {
@@ -138,4 +138,6 @@ document.addEventListener("DOMContentLoaded", function () {
     for (let todo of todoList) {
         createAndAppendTodo(todo);
     }
+
+    updateTaskCounts();
 });
